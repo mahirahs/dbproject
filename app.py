@@ -32,27 +32,6 @@ class SignUpForm(FlaskForm):
     teacher = BooleanField('Teacher')
     contact_number = StringField('Contact Number', validators=[InputRequired(), Length(max=20)])
 
-'''
-# database table definitions
-class Member(db.Model):
-    __tablename__ = 'students'
-    MemberID = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
-    email = db.Column(db.String(60), nullable=False)
-    password = db.Column(db.String(50), nullable=False)
-    contactnumber = db.Column(db.Integer)
-    membertype = db.Column(db.Boolean, default=False) # False for student, true for teacher ?
-    fine = db.Column(db.Float)
-    
-    def __init__(self, name, email, password, contactnumber, membertype, fine):
-        self.name = name
-        self.email = email
-        self.password = password
-        self.contactnumber = contactnumber
-        self.membertype = membertype
-        self.fine = fine
-'''
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -105,6 +84,52 @@ def account():
         return render_template('account.html', name=name)
     else:
         return redirect(url_for('signin'))
+    
+    
+@app.route('/edit_profile', methods=['GET', 'POST'])
+def edit_profile():
+    #if 'user' not in session:
+    #    return redirect(url_for('signin'))  # Redirect to sign-in if not logged in
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        password = request.form['password']
+        contact = request.form['contact']
+
+        cur = conn.cursor()
+        # Update user information in the database
+        if password:
+            hashed_password = sha256_crypt.encrypt(password)
+            cur.execute("UPDATE member SET name=%s, email=%s, password=%s, contact=%s WHERE email=%s",
+                        (name, email, hashed_password, contact, session['user']['email']))
+        else:
+            cur.execute("UPDATE member SET name=%s, email=%s, contact=%s WHERE email=%s",
+                        (name, email, contact, session['user']['email']))
+        
+        conn.commit()
+        cur.close()
+
+        # Update session user information
+        session['user']['name'] = name
+        session['user']['email'] = email
+        session['user']['contact'] = contact
+
+        flash("Profile updated successfully!")
+        return redirect(url_for('account'))
+    else:
+        return render_template('edit_profile.html', user=session['user'])
+
+@app.route('/checkout_books', methods=['GET', 'POST'])
+def checkout_books():
+    if request.method == 'POST':
+        # Logic to handle checking out books
+        flash("Books checked out successfully!")
+        return redirect(url_for('account'))
+    else:
+        # Render the checkout books page
+        return render_template('checkout_books.html')
+
 
 
 @app.route('/employee/signin')
