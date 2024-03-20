@@ -66,8 +66,7 @@ def signin():
         session.permanent = True  # Mark session as permanent
         session['user'] = {'email': email}  # Store user's email in session
         
-        
-
+    
         cur = conn.cursor()
         cur.execute("SELECT name, password, id FROM member WHERE email = %s", (email,))
         user = cur.fetchone()
@@ -85,30 +84,7 @@ def signin():
         #return redirect(url_for('account'))
     
     return render_template('signin.html')
-'''
-@app.route('/signin', methods=['GET', 'POST'])
-def signin():
-    if request.method == 'POST':
-        # Authentication logic here
-        
-        # If authentication is successful, set user session
-        session.permanent = True  # Mark session as permanent
-        session['user'] = {'email': email}  # Store user's email in session
-        flash("You are now signed in.")
-        return redirect(url_for('account'))
-    
-    return render_template('signin.html')
-'''
-'''
-@app.route('/account')
-def account():
-    if 'name' in session:
-        name = session['name']
-        return render_template('account.html', name=name)
-    else:
-        return redirect(url_for('signin'))
-    
-'''
+
 @app.route('/account')
 def account():
     if 'user' in session:
@@ -157,45 +133,7 @@ def edit_profile():
     else:
         return render_template('edit_profile.html', user=session['user'])
 
-'''
-@app.route('/checkout_books', methods=['GET', 'POST'])
-def checkout_books():
-    if request.method == 'GET':
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM books")
-        books = cur.fetchall()
-        cur.close()
 
-        return render_template('checkout_books.html', books=books)
-    elif request.method == 'POST':
-        # Handle book checkout logic here
-        pass
-
-'''
-'''
-@app.route('/checkout_books', methods=['GET', 'POST'])
-def checkout_books():
-    if request.method == 'GET':
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM books")
-        books = cur.fetchall()
-        cur.close()
-
-        return render_template('checkout_books.html', books=books)
-    elif request.method == 'POST':
-        book_id = request.form.get('book_id')
-        if book_id:
-            # Update book status to "Not Available" in the database
-            cur = conn.cursor()
-            cur.execute("UPDATE books SET status='not available' WHERE id=%s", (book_id,))
-            conn.commit()
-            cur.close()
-            flash("Book checked out successfully!")
-        else:
-            flash("Invalid book ID!")
-
-        return redirect(url_for('checkout_books'))
-'''
 @app.route('/checkout_books', methods=['GET', 'POST'])
 def checkout_books():
     if request.method == 'GET':
@@ -209,16 +147,7 @@ def checkout_books():
         if book_id:
             # Update book status to "Not Available" in the database
             cur = conn.cursor()
-            '''
-            cur.execute("UPDATE books SET status='not available' WHERE id=%s", (book_id,))
-            
-            # Insert record into book_record table
-            borrow_date = datetime.date.today()
-            return_date = borrow_date + datetime.timedelta(days=10)  # Assuming 10 days borrowing period
-            cur.execute("INSERT INTO book_record (bookid, memberid, borrowdate, returndate) VALUES (%s, %s, %s, %s)",
-                        (book_id, session['id'], borrow_date, return_date))
-            cur.execute("UPDATE book_record SET isreturned=false WHERE bookid=%s AND memberid=%s", (book_id, session['id']))
-            '''
+
             cur.execute("UPDATE books SET status='not available' WHERE id=%s", (book_id,))
             
             # Insert record into book_record table
@@ -236,36 +165,6 @@ def checkout_books():
 
         return redirect(url_for('checkout_books'))
 
-'''
-@app.route('/view_checked_out_books', methods=['GET', 'POST'])
-def view_checked_out_books():
-    if request.method == 'GET':
-        # Fetch checked out books for the current user (assuming you have a user ID in the session)
-        user_id = session.get('user_id')  # Adjust this according to your session setup
-        print(user_id)
-        if user_id:
-            cur = conn.cursor()
-            cur.execute("SELECT * FROM books WHERE status='not available' AND id=%s", (user_id,))
-            checked_out_books = cur.fetchall()
-            cur.close()
-            return render_template('view_checked_out_books.html', checked_out_books=checked_out_books)
-        #else:
-        #    flash("You need to sign in to view checked out books.")
-        #    return redirect(url_for('signin'))
-    elif request.method == 'POST':
-        book_id = request.form.get('book_id')
-        if book_id:
-            # Update book status to "Available" in the database
-            cur = conn.cursor()
-            cur.execute("UPDATE books SET status='available' WHERE id=%s", (book_id,))
-            conn.commit()
-            cur.close()
-            flash("Book returned successfully!")
-            return redirect(url_for('view_checked_out_books'))
-        else:
-            flash("Invalid book ID!")
-            return redirect(url_for('view_checked_out_books'))
-'''
 @app.route('/view_checked_out_books', methods=['GET'])
 def view_checked_out_books():
     if 'user' in session:
@@ -308,11 +207,133 @@ def return_book():
         flash("Invalid record ID!")
     return redirect(url_for('view_checked_out_books'))
 
-
-@app.route('/employee/signin')
+'''
+# Route for employee sign-in page
+@app.route('/employee_signin', methods=['GET', 'POST'])
 def employee_signin():
-    # Add functionality for employee signin page
-    return "Employee Sign In Page"
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        #conn = connect_to_database()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM employee WHERE email = %s", (email,))
+        employee = cursor.fetchone()
+        cursor.close()
+        #conn.close()
+        if employee:
+            stored_password = employee[3]  # Assuming password is stored at index 3
+            if password == stored_password:
+                print("correct password")
+                session['email'] = email
+                return redirect(url_for('dashboard'))
+            else:
+                print("no correct password")
+                error = 'Invalid email or password'
+                return render_template('signin.html', error=error)
+
+        else:
+            error = 'Invalid email or password'
+            return render_template('signin.html', error=error)
+
+    return render_template('signin.html')
+'''
+
+@app.route('/employee_signup', methods=['GET', 'POST'])
+def employee_signup():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        password = sha256_crypt.encrypt(request.form['password'])  # Encrypt password
+        contact = request.form['contact']
+        #member_type = request.form['member_type']
+
+        cur = conn.cursor()
+        cur.execute("INSERT INTO employee (name, email, password, contact) VALUES (%s, %s, %s, %s)",
+                    (name, email, password, contact))
+        conn.commit()
+        cur.close()
+        
+        return redirect(url_for('index'))
+
+    return render_template('employee_signup.html')
+
+@app.route('/employee_signin', methods=['GET', 'POST'])
+def employee_signin():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        session.permanent = True  # Mark session as permanent
+        session['user'] = {'email': email}  # Store user's email in session
+
+        cur = conn.cursor()
+        cur.execute("SELECT name, password, id FROM employee WHERE email = %s", (email,))
+        user = cur.fetchone()
+        cur.close()
+
+        if user:
+            
+            #idnum, name, email, password_this, contact = user
+            name, hashed_password, idnum = user
+            #name, hashed_password, idnum = user
+            if sha256_crypt.verify(password, hashed_password):
+                print("HERE pass")
+                session['name'] = name
+                session['id'] = idnum
+                flash("Successfully signed in!")
+                return redirect(url_for('dashboard'))
+        
+        flash("Cannot sign in - incorrect email or password.")
+        #return redirect(url_for('dashboard'))
+    else:
+        print("at else")
+        return render_template('employee_signin.html')
+
+# Route for employee dashboard
+@app.route('/dashboard')
+def dashboard():
+    
+    if 'user' in session:
+        return render_template('dashboard.html')
+    else:
+        return redirect(url_for('signin'))
+     
+
+# Route for employee sign-out
+@app.route('/employee_signout')
+def employee_signout():
+    session.pop('user', None)
+    return redirect(url_for('employee_signin'))
+
+# Route to view member details and their checked-out books
+@app.route('/view_members')
+def view_members():
+    if 'user' in session:
+        #conn = connect_to_database()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name FROM Member")
+        members = cursor.fetchall()
+        member_books = {}
+        for member in members:
+            member_id = member[0]
+            cursor.execute("SELECT bookid FROM book_record WHERE memberid = %s AND isreturned = %s", (member_id, False))
+            #cursor.execute("SELECT bookid FROM book_record WHERE id = %s", (member_id,))
+            books = cursor.fetchall()
+            if books:
+                book_ids = [book[0] for book in books]
+                cursor.execute("SELECT id, name FROM books WHERE id IN %s", (tuple(book_ids),))
+                books_data = cursor.fetchall()
+                member_books[member_id] = {'name': member[1], 'books': books_data}
+            else:
+                member_books[member_id] = {'name': member[1], 'books': []}
+        cursor.close()
+        #conn.close()
+        return render_template('view_members.html', members=members, member_books=member_books)
+    else:
+        return redirect(url_for('employee_signin'))
+
+
+
+
 
 @app.route('/view_books')
 def view_library_books():

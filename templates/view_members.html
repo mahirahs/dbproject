@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Members</title>
+</head>
+<body>
+    <h1>View Members</h1>
+    <ul>
+        {% for member in members %}
+        <li>
+            <strong>{{ member[1] }}</strong>
+            <ul>
+                {% for book in member_books[member[0]]['books'] %}
+                <li>{{ book[1] }}</li>
+                {% endfor %}
+            </ul>
+        </li>
+        {% endfor %}
+    </ul>
+    <a href="/dashboard">Back to Dashboard</a>
+</body>
+</html>
