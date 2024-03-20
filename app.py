@@ -77,7 +77,7 @@ def signin():
             name, hashed_password, idnum = user
             if sha256_crypt.verify(password, hashed_password):
                 session['name'] = name
-                session['user_id'] = idnum
+                session['id'] = idnum
                 flash("Successfully signed in!")
                 return redirect(url_for('account'))
         
@@ -172,6 +172,7 @@ def checkout_books():
         pass
 
 '''
+'''
 @app.route('/checkout_books', methods=['GET', 'POST'])
 def checkout_books():
     if request.method == 'GET':
@@ -194,7 +195,48 @@ def checkout_books():
             flash("Invalid book ID!")
 
         return redirect(url_for('checkout_books'))
-    
+'''
+@app.route('/checkout_books', methods=['GET', 'POST'])
+def checkout_books():
+    if request.method == 'GET':
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM books WHERE status='available'")
+        available_books = cur.fetchall()
+        cur.close()
+        return render_template('checkout_books.html', books=available_books)
+    elif request.method == 'POST':
+        book_id = request.form.get('book_id')
+        if book_id:
+            # Update book status to "Not Available" in the database
+            cur = conn.cursor()
+            '''
+            cur.execute("UPDATE books SET status='not available' WHERE id=%s", (book_id,))
+            
+            # Insert record into book_record table
+            borrow_date = datetime.date.today()
+            return_date = borrow_date + datetime.timedelta(days=10)  # Assuming 10 days borrowing period
+            cur.execute("INSERT INTO book_record (bookid, memberid, borrowdate, returndate) VALUES (%s, %s, %s, %s)",
+                        (book_id, session['id'], borrow_date, return_date))
+            cur.execute("UPDATE book_record SET isreturned=false WHERE bookid=%s AND memberid=%s", (book_id, session['id']))
+            '''
+            cur.execute("UPDATE books SET status='not available' WHERE id=%s", (book_id,))
+            
+            # Insert record into book_record table
+            borrow_date = datetime.date.today()
+            return_date = borrow_date + datetime.timedelta(days=10)  # Assuming 10 days borrowing period
+            cur.execute("INSERT INTO book_record (bookid, memberid, borrowdate, returndate, isreturned) VALUES (%s, %s, %s, %s, true)",
+                        (book_id, session['id'], borrow_date, return_date))
+            # Update isreturned attribute to false in the book_record table
+            cur.execute("UPDATE book_record SET isreturned=false WHERE bookid=%s AND memberid=%s", (book_id, session['id']))
+            conn.commit()
+            cur.close()
+            flash("Book checked out successfully!")
+        else:
+            flash("Invalid book ID!")
+
+        return redirect(url_for('checkout_books'))
+
+'''
 @app.route('/view_checked_out_books', methods=['GET', 'POST'])
 def view_checked_out_books():
     if request.method == 'GET':
@@ -223,6 +265,48 @@ def view_checked_out_books():
         else:
             flash("Invalid book ID!")
             return redirect(url_for('view_checked_out_books'))
+'''
+@app.route('/view_checked_out_books', methods=['GET'])
+def view_checked_out_books():
+    if 'user' in session:
+        user_id = session['id']  # Assuming the user ID is stored in the session
+        cur = conn.cursor()
+        cur.execute("SELECT books.id, books.name, books.author, books.publisher, book_record.borrowdate, book_record.returndate, book_record.dayspast, book_record.fineincurred FROM books INNER JOIN book_record ON books.id = book_record.bookid WHERE book_record.memberid = %s AND book_record.isreturned = false", (user_id,))
+        checked_out_books = cur.fetchall()
+        cur.close()
+        return render_template('view_checked_out_books.html', checked_out_books=checked_out_books)
+    else:
+        flash("You need to sign in to view checked out books.")
+        return redirect(url_for('signin'))
+        
+@app.route('/return_book', methods=['POST'])
+def return_book():
+    record_id = request.form.get('record_id')
+    
+    # get user id and book id
+    user_id = session['id']
+    book_id = request.form.get('book_id')
+    
+    if user_id and book_id:
+        cur = conn.cursor()
+        # Fetch book ID and user ID from book_record table
+        #cur.execute("SELECT bookid, memberid FROM book_record WHERE id = %s", (record_id,))
+        #record = cur.fetchone()
+        #book_id = record[0]
+        #member_id = record[1]
+
+        # Update book status to "Available" in the books table
+        cur.execute("UPDATE books SET status='available' WHERE id=%s", (book_id,))
+
+        # Update isreturned attribute to true in the book_record table
+        cur.execute("UPDATE book_record SET isreturned=true WHERE bookid=%s", (book_id,))
+        
+        conn.commit()
+        cur.close()
+        flash("Book returned successfully!")
+    else:
+        flash("Invalid record ID!")
+    return redirect(url_for('view_checked_out_books'))
 
 
 @app.route('/employee/signin')
