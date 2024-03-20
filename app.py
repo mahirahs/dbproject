@@ -6,9 +6,11 @@ from wtforms.validators import InputRequired, Email, Length
 import psycopg2
 import bcrypt
 from passlib.hash import sha256_crypt
+import datetime
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
+app.permanent_session_lifetime = datetime.timedelta(hours=2)  # Set session timeout to 2 hours
 
 # PostgreSQL connection configuration
 conn = psycopg2.connect(
@@ -55,28 +57,49 @@ def signup():
 
     return render_template('signup.html')
 
+
 @app.route('/signin', methods=['GET', 'POST'])
 def signin():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
+        session.permanent = True  # Mark session as permanent
+        session['user'] = {'email': email}  # Store user's email in session
+        
+        
 
         cur = conn.cursor()
-        cur.execute("SELECT name, password FROM member WHERE email = %s", (email,))
+        cur.execute("SELECT name, password, id FROM member WHERE email = %s", (email,))
         user = cur.fetchone()
         cur.close()
 
         if user:
-            name, hashed_password = user
+            name, hashed_password, idnum = user
             if sha256_crypt.verify(password, hashed_password):
                 session['name'] = name
+                session['user_id'] = idnum
                 flash("Successfully signed in!")
                 return redirect(url_for('account'))
         
         flash("Cannot sign in - incorrect email or password.")
+        #return redirect(url_for('account'))
     
     return render_template('signin.html')
-
+'''
+@app.route('/signin', methods=['GET', 'POST'])
+def signin():
+    if request.method == 'POST':
+        # Authentication logic here
+        
+        # If authentication is successful, set user session
+        session.permanent = True  # Mark session as permanent
+        session['user'] = {'email': email}  # Store user's email in session
+        flash("You are now signed in.")
+        return redirect(url_for('account'))
+    
+    return render_template('signin.html')
+'''
+'''
 @app.route('/account')
 def account():
     if 'name' in session:
@@ -85,7 +108,21 @@ def account():
     else:
         return redirect(url_for('signin'))
     
+'''
+@app.route('/account')
+def account():
+    if 'user' in session:
+        return render_template('account.html')
+    else:
+        return redirect(url_for('signin'))
     
+@app.route('/signout')
+def signout():
+    session.pop('user', None)  # Clear user session
+    flash("You have been signed out.")
+    return redirect(url_for('signin'))
+
+
 @app.route('/edit_profile', methods=['GET', 'POST'])
 def edit_profile():
     #if 'user' not in session:
@@ -120,16 +157,72 @@ def edit_profile():
     else:
         return render_template('edit_profile.html', user=session['user'])
 
+'''
 @app.route('/checkout_books', methods=['GET', 'POST'])
 def checkout_books():
-    if request.method == 'POST':
-        # Logic to handle checking out books
-        flash("Books checked out successfully!")
-        return redirect(url_for('account'))
-    else:
-        # Render the checkout books page
-        return render_template('checkout_books.html')
+    if request.method == 'GET':
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM books")
+        books = cur.fetchall()
+        cur.close()
 
+        return render_template('checkout_books.html', books=books)
+    elif request.method == 'POST':
+        # Handle book checkout logic here
+        pass
+
+'''
+@app.route('/checkout_books', methods=['GET', 'POST'])
+def checkout_books():
+    if request.method == 'GET':
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM books")
+        books = cur.fetchall()
+        cur.close()
+
+        return render_template('checkout_books.html', books=books)
+    elif request.method == 'POST':
+        book_id = request.form.get('book_id')
+        if book_id:
+            # Update book status to "Not Available" in the database
+            cur = conn.cursor()
+            cur.execute("UPDATE books SET status='not available' WHERE id=%s", (book_id,))
+            conn.commit()
+            cur.close()
+            flash("Book checked out successfully!")
+        else:
+            flash("Invalid book ID!")
+
+        return redirect(url_for('checkout_books'))
+    
+@app.route('/view_checked_out_books', methods=['GET', 'POST'])
+def view_checked_out_books():
+    if request.method == 'GET':
+        # Fetch checked out books for the current user (assuming you have a user ID in the session)
+        user_id = session.get('user_id')  # Adjust this according to your session setup
+        print(user_id)
+        if user_id:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM books WHERE status='not available' AND id=%s", (user_id,))
+            checked_out_books = cur.fetchall()
+            cur.close()
+            return render_template('view_checked_out_books.html', checked_out_books=checked_out_books)
+        #else:
+        #    flash("You need to sign in to view checked out books.")
+        #    return redirect(url_for('signin'))
+    elif request.method == 'POST':
+        book_id = request.form.get('book_id')
+        if book_id:
+            # Update book status to "Available" in the database
+            cur = conn.cursor()
+            cur.execute("UPDATE books SET status='available' WHERE id=%s", (book_id,))
+            conn.commit()
+            cur.close()
+            flash("Book returned successfully!")
+            return redirect(url_for('view_checked_out_books'))
+        else:
+            flash("Invalid book ID!")
+            return redirect(url_for('view_checked_out_books'))
 
 
 @app.route('/employee/signin')
@@ -138,9 +231,13 @@ def employee_signin():
     return "Employee Sign In Page"
 
 @app.route('/view_books')
-def view_books():
-    # Add functionality for viewing library books
-    return "View Library Books Page"
+def view_library_books():
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM books")
+    books = cur.fetchall()
+    cur.close()
+    
+    return render_template('view_books.html', books=books)
 
 if __name__ == '__main__':
     app.run(debug=True)

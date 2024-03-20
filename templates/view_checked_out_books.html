@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Checked Out Books</title>
+    <style>
+        .book-card {
+            border: 1px solid;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Checked Out Books</h2>
+    <div class="book-container">
+        {% for book in checked_out_books %}
+        <div class="book-card">
+            <h3>{{ book[1] }}</h3>
+            <p><strong>Author:</strong> {{ book[2] }}</p>
+            <p><strong>Publisher:</strong> {{ book[3] }}</p>
+            <p><strong>Status:</strong> {{ book[4] }}</p>
+            <form action="/view_checked_out_books" method="post">
+                <input type="hidden" name="book_id" value="{{ book[0] }}">
+                <input type="submit" value="Return Book">
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

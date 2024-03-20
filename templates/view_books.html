@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Library Books</title>
+    <style>
+        .card {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .card h3 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h2>Library Books</h2>
+    <div class="container">
+        {% for book in books %}
+        <div class="card">
+            <h3>{{ book[1] }}</h3>
+            <p><strong>Author:</strong> {{ book[2] }}</p>
+            <p><strong>Publisher:</strong> {{ book[3] }}</p>
+            <p><strong>Status:</strong> {{ book[4] }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

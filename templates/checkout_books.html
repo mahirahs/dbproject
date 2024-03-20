@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout Books</title>
+    <style>
+        .book-card {
+            border: 1px solid;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .available {
+            border-color: green;
+        }
+        .not-available {
+            border-color: red;
+        }
+    </style>
+</head>
+<body>
+    <h2>Checkout Books</h2>
+    <div class="book-container">
+        {% for book in books %}
+        <div class="book-card {% if book[4] == 'available' %}available{% else %}not-available{% endif %}">
+            <h3>{{ book[1] }}</h3>
+            <p><strong>Author:</strong> {{ book[2] }}</p>
+            <p><strong>Publisher:</strong> {{ book[3] }}</p>
+            <p><strong>Status:</strong> {{ book[4] }}</p>
+            {% if book[4] == 'available' %}
+            <form action="/checkout_books" method="post">
+                <input type="hidden" name="book_id" value="{{ book[0] }}">
+                <input type="submit" value="Check Out">
+            </form>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

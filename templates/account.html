@@ -8,12 +8,11 @@
 <body>
     <h2>Welcome to your library profile, {{ name }}!</h2>
     <div>
-        <form action="/edit_profile" method="post">
-            <input type="submit" value="Edit Profile">
-        </form>
-        <form action="/checkout_books" method="post">
-            <input type="submit" value="Check Out Books">
-        </form>
+        <a href="/edit_profile" class="btn btn-primary">Edit profile</a>
+        <a href="/checkout_books" class="btn btn-primary">Check Out Books</a>
+        <a href="/view_checked_out_books" class="btn btn-primary">View checked out books</a>
+        <a href="/signout" class="btn btn-primary">Sign Out</a>
+
     </div>
 </body>
 </html>
