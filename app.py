@@ -88,7 +88,13 @@ def signin():
 @app.route('/account')
 def account():
     if 'user' in session:
-        return render_template('account.html')
+        #return render_template('account.html')
+        user_id = session['id']  # Assuming the user ID is stored in the session
+        cur = conn.cursor()
+        cur.execute("SELECT COALESCE(SUM(CAST(fineincurred AS NUMERIC)), 0) FROM book_record WHERE memberid = %s", (user_id,))
+        total_fine = cur.fetchone()[0]  # Fetching the total fine incurred
+        cur.close()
+        return render_template('account.html', total_fine=total_fine)
     else:
         return redirect(url_for('signin'))
     
