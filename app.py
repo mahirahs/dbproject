@@ -91,8 +91,17 @@ def account():
         #return render_template('account.html')
         user_id = session['id']  # Assuming the user ID is stored in the session
         cur = conn.cursor()
-        cur.execute("SELECT COALESCE(SUM(CAST(fineincurred AS NUMERIC)), 0) FROM book_record WHERE memberid = %s", (user_id,))
-        total_fine = cur.fetchone()[0]  # Fetching the total fine incurred
+        #cur.execute("SELECT COALESCE(SUM(CAST(fineincurred AS NUMERIC)), 0) FROM book_record WHERE memberid = %s", (user_id,))
+        #total_fine = cur.fetchone()[0]  # Fetching the total fine incurred
+        #cur.close()
+        cur.execute("""
+            SELECT m.id, m.name, COALESCE(SUM(CAST(br.fineincurred AS NUMERIC)), 0) AS total_fine
+            FROM member AS m
+            LEFT JOIN book_record AS br ON m.id = br.memberid
+            WHERE m.id = %s
+            GROUP BY m.id, m.name;
+        """, (user_id,))
+        total_fine = cur.fetchone()  # Fetching the total fine incurred by the member
         cur.close()
         return render_template('account.html', total_fine=total_fine)
     else:
@@ -173,13 +182,30 @@ def checkout_books():
 
 @app.route('/view_checked_out_books', methods=['GET'])
 def view_checked_out_books():
-    if 'user' in session:
+    '''if 'user' in session:
         user_id = session['id']  # Assuming the user ID is stored in the session
         cur = conn.cursor()
         cur.execute("SELECT books.id, books.name, books.author, books.publisher, book_record.borrowdate, book_record.returndate, book_record.dayspast, book_record.fineincurred FROM books INNER JOIN book_record ON books.id = book_record.bookid WHERE book_record.memberid = %s AND book_record.isreturned = false", (user_id,))
         checked_out_books = cur.fetchall()
         cur.close()
         return render_template('view_checked_out_books.html', checked_out_books=checked_out_books)
+    '''
+    if 'user' in session:
+        user_id = session['id']  # Assuming the user ID is stored in the session
+        cur = conn.cursor()
+        # Query to count the total number of books borrowed by the signed-in member
+        cur.execute("SELECT COUNT(*) FROM book_record WHERE memberid = %s AND isreturned = false", (user_id,))
+        total_books_borrowed = cur.fetchone()[0]  # Fetching the total number of books borrowed
+        # Query to retrieve the list of checked-out books
+        cur.execute("""
+            SELECT books.id, books.name, books.author, books.publisher, book_record.borrowdate, book_record.returndate, book_record.dayspast, book_record.fineincurred
+            FROM books
+            INNER JOIN book_record ON books.id = book_record.bookid
+            WHERE book_record.memberid = %s AND book_record.isreturned = false
+        """, (user_id,))
+        checked_out_books = cur.fetchall()
+        cur.close()
+        return render_template('view_checked_out_books.html', checked_out_books=checked_out_books, total_books_borrowed=total_books_borrowed)
     else:
         flash("You need to sign in to view checked out books.")
         return redirect(url_for('signin'))
@@ -212,37 +238,6 @@ def return_book():
     else:
         flash("Invalid record ID!")
     return redirect(url_for('view_checked_out_books'))
-
-'''
-# Route for employee sign-in page
-@app.route('/employee_signin', methods=['GET', 'POST'])
-def employee_signin():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        #conn = connect_to_database()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM employee WHERE email = %s", (email,))
-        employee = cursor.fetchone()
-        cursor.close()
-        #conn.close()
-        if employee:
-            stored_password = employee[3]  # Assuming password is stored at index 3
-            if password == stored_password:
-                print("correct password")
-                session['email'] = email
-                return redirect(url_for('dashboard'))
-            else:
-                print("no correct password")
-                error = 'Invalid email or password'
-                return render_template('signin.html', error=error)
-
-        else:
-            error = 'Invalid email or password'
-            return render_template('signin.html', error=error)
-
-    return render_template('signin.html')
-'''
 
 @app.route('/employee_signup', methods=['GET', 'POST'])
 def employee_signup():
