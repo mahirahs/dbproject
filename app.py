@@ -70,13 +70,42 @@ def signin():
         cur = conn.cursor()
         cur.execute("SELECT name, password, id FROM member WHERE email = %s", (email,))
         user = cur.fetchone()
-        cur.close()
+        #cur.close()
 
         if user:
             name, hashed_password, idnum = user
             if sha256_crypt.verify(password, hashed_password):
                 session['user']['name'] = name
                 session['user']['id'] = idnum
+                
+               # Calculate dayspast and update Book_record table
+                cur.execute("""
+                    UPDATE book_record
+                    SET dayspast = GREATEST(EXTRACT(EPOCH FROM (NOW() - returndate)) / 86400, 0)
+                    WHERE memberid = %s;
+                """, (idnum,))
+                conn.commit()  # Commit the transaction
+                
+                # Get member_type from member table
+                cur.execute("SELECT member_type FROM member WHERE id = %s", (idnum,))
+                member_type = cur.fetchone()[0]
+                
+                # Calculate fineincurred based on member_type
+                if member_type == 'student':
+                    cur.execute("""
+                        UPDATE book_record
+                        SET fineincurred = GREATEST(dayspast * 2.50, 0)
+                        WHERE memberid = %s;
+                    """, (idnum,))
+                elif member_type == 'teacher':
+                    cur.execute("""
+                        UPDATE book_record
+                        SET fineincurred = GREATEST(dayspast * 1.50, 0)
+                        WHERE memberid = %s;
+                    """, (idnum,))
+                
+                conn.commit()  # Commit the transaction
+                
                 flash("Successfully signed in!")
                 return redirect(url_for('account'))
         
@@ -176,9 +205,9 @@ def checkout_books():
             borrow_date = datetime.date.today()
             return_date = borrow_date + datetime.timedelta(days=10)  # Assuming 10 days borrowing period
             cur.execute("INSERT INTO book_record (bookid, memberid, borrowdate, returndate, isreturned) VALUES (%s, %s, %s, %s, true)",
-                        (book_id, session['id'], borrow_date, return_date))
+                        (book_id, session['user']['id'], borrow_date, return_date))
             # Update isreturned attribute to false in the book_record table
-            cur.execute("UPDATE book_record SET isreturned=false WHERE bookid=%s AND memberid=%s", (book_id, session['id']))
+            cur.execute("UPDATE book_record SET isreturned=false WHERE bookid=%s AND memberid=%s", (book_id, session['user']['id']))
             conn.commit()
             cur.close()
             flash("Book checked out successfully!")
@@ -198,7 +227,7 @@ def view_checked_out_books():
         return render_template('view_checked_out_books.html', checked_out_books=checked_out_books)
     '''
     if 'user' in session:
-        user_id = session['id']  # Assuming the user ID is stored in the session
+        user_id = session['user']['id']  # Assuming the user ID is stored in the session
         cur = conn.cursor()
         # Query to count the total number of books borrowed by the signed-in member
         cur.execute("SELECT COUNT(*) FROM book_record WHERE memberid = %s AND isreturned = false", (user_id,))
@@ -222,7 +251,7 @@ def return_book():
     record_id = request.form.get('record_id')
     
     # get user id and book id
-    user_id = session['id']
+    user_id = session['user']['id']
     book_id = request.form.get('book_id')
     
     if user_id and book_id:
@@ -286,7 +315,7 @@ def employee_signin():
             if sha256_crypt.verify(password, hashed_password):
                 print("HERE pass")
                 session['name'] = name
-                session['id'] = idnum
+                session['user']['id'] = idnum
                 flash("Successfully signed in!")
                 return redirect(url_for('dashboard'))
         
