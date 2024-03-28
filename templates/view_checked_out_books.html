@@ -1,111 +1,37 @@
-<!--<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Checked Out Books</title>
-    <style>
-        .book-card {
-            border: 1px solid;
-            padding: 10px;
-            margin-bottom: 20px;
-        }
-    </style>
-</head>
-<body>
-    <h2>Checked Out Books</h2>
-    <div class="book-container">
-        {% for book in checked_out_books %}
-        <div class="book-card">
-            <h3>{{ book[1] }}</h3>
-            <p><strong>Author:</strong> {{ book[2] }}</p>
-            <p><strong>Publisher:</strong> {{ book[3] }}</p>
-            <p><strong>Status:</strong> {{ book[4] }}</p>
-            <form action="/view_checked_out_books" method="post">
-                <input type="hidden" name="book_id" value="{{ book[0] }}">
-                <input type="submit" value="Return Book">
-            </form>
-        </div>
-        {% endfor %}
-    </div>
-</body>
-</html>
--->
-
-<!--
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Checked Out Books</title>
-    <style>
-        .book-card {
-            border: 1px solid;
-            padding: 10px;
-            margin-bottom: 20px;
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <h2>Checked Out Books</h2>
-    <div class="book-container">
-        {% for book in checked_out_books %}
-        <div class="book-card">
-            <h3>{{ book[1] }}</h3>
-            <p><strong>Author:</strong> {{ book[2] }}</p>
-            <p><strong>Publisher:</strong> {{ book[3] }}</p>
-            <p><strong>Borrow Date:</strong> {{ book[4] }}</p>
-            <p><strong>Return Date:</strong> {{ book[5] }}</p>
-            <p><strong>Days Past:</strong> {{ book[6] }}</p>
-            <p><strong>Fine Incurred:</strong> {{ book[7] }}</p>
+    <div class="container">
+        <h2 class="mt-4">Checked Out Books</h2>
+        <p>Total Books Borrowed: {{ total_books_borrowed }}</p>
+        <div class="row">
+            {% for book in checked_out_books %}
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h3 class="card-title">{{ book[1] }}</h3>
+                        <p class="card-text"><strong>Author:</strong> {{ book[2] }}</p>
+                        <p class="card-text"><strong>Publisher:</strong> {{ book[3] }}</p>
+                        <p class="card-text"><strong>Borrow Date:</strong> {{ book[4] }}</p>
+                        <p class="card-text"><strong>Return Date:</strong> {{ book[5] }}</p>
+                        <p class="card-text"><strong>Days Past:</strong> {{ book[6] }}</p>
+                        <p class="card-text"><strong>Fine Incurred:</strong> {{ book[7] }}</p>
+                        <form action="/return_book" method="post">
+                            <input type="hidden" name="record_id" value="{{ book['id'] }}">
+                            <input type="hidden" name="book_id" value="{{ book[0] }}">
+                            <button type="submit" class="btn btn-primary">Return Book</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
-</body>
-</html>
--->
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Checked Out Books</title>
-    <h2>Total Books Borrowed: {{ total_books_borrowed }}</h2>
-    <style>
-        .book-card {
-            border: 1px solid;
-            padding: 10px;
-            margin-bottom: 20px;
-            position: relative; /* Added for button positioning */
-        }
-        .return-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-        }
-    </style>
-</head>
-<body>
-    <h2>Checked Out Books</h2>
-    <div class="book-container">
-        {% for book in checked_out_books %}
-        <div class="book-card">
-            <h3>{{ book[1] }}</h3>
-            <p><strong>Author:</strong> {{ book[2] }}</p>
-            <p><strong>Publisher:</strong> {{ book[3] }}</p>
-            <p><strong>Borrow Date:</strong> {{ book[4] }}</p>
-            <p><strong>Return Date:</strong> {{ book[5] }}</p>
-            <p><strong>Days Past:</strong> {{ book[6] }}</p>
-            <p><strong>Fine Incurred:</strong> {{ book[7] }}</p>
-            <form action="/return_book" method="post">
-                <input type="hidden" name="record_id" value="{{ book['id'] }}">
-                <input type="hidden" name="book_id" value="{{ book[0] }}">
-                <input type="submit" class="return-button" value="Return Book">
-            </form>
-        </div>
-        {% endfor %}
     </div>
 </body>
 </html>

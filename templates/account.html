@@ -4,18 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Account</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <h2>Welcome to your library profile, {{ name }}!</h2>
-    <div>
-        <a href="/edit_profile" class="btn btn-primary">Edit profile</a>
-        <a href="/checkout_books" class="btn btn-primary">Check Out Books</a>
-        <a href="/view_checked_out_books" class="btn btn-primary">View checked out books</a>
-        <a href="/signout" class="btn btn-primary">Sign Out</a>
-
-    </div>
-    <div>
-        <p>Total Fine Incurred: {{ total_fine[2] }}</p>
+    <div class="container py-5">
+        <div class="row">
+            <div class="col-md-8 mx-auto text-center">
+                <h2 class="mb-4">Welcome to your library profile, {{ user.name }}!</h2>
+                <div class="d-flex justify-content-center">
+                    <a href="/edit_profile" class="btn btn-primary me-3">Edit Profile</a>
+                    <a href="/checkout_books" class="btn btn-primary me-3">Check Out Books</a>
+                    <a href="/view_checked_out_books" class="btn btn-primary me-3">View Checked Out Books</a>
+                    <a href="/signout" class="btn btn-danger">Sign Out</a>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-5">
+            <div class="col-md-6 mx-auto">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Account Information</h5>
+                        <p class="card-text">Total Fine Incurred: {{ total_fine[0] }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 </html>

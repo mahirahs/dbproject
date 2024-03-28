@@ -75,8 +75,8 @@ def signin():
         if user:
             name, hashed_password, idnum = user
             if sha256_crypt.verify(password, hashed_password):
-                session['name'] = name
-                session['id'] = idnum
+                session['user']['name'] = name
+                session['user']['id'] = idnum
                 flash("Successfully signed in!")
                 return redirect(url_for('account'))
         
@@ -89,21 +89,28 @@ def signin():
 def account():
     if 'user' in session:
         #return render_template('account.html')
-        user_id = session['id']  # Assuming the user ID is stored in the session
+        #user_id = session['id']  # Assuming the user ID is stored in the session
         cur = conn.cursor()
         #cur.execute("SELECT COALESCE(SUM(CAST(fineincurred AS NUMERIC)), 0) FROM book_record WHERE memberid = %s", (user_id,))
         #total_fine = cur.fetchone()[0]  # Fetching the total fine incurred
         #cur.close()
+        user_id = session['user']['id']  # Assuming the user ID is stored in the session
+        name = session['user']['name']  # Retrieve name from the session
+        print("sesh id 1: ", user_id)
         cur.execute("""
-            SELECT m.id, m.name, COALESCE(SUM(CAST(br.fineincurred AS NUMERIC)), 0) AS total_fine
-            FROM member AS m
-            LEFT JOIN book_record AS br ON m.id = br.memberid
-            WHERE m.id = %s
-            GROUP BY m.id, m.name;
+
+            SELECT COALESCE(SUM(CAST(fineincurred AS NUMERIC)), 0) AS total_fine
+            FROM book_record
+            WHERE memberid = %s;
+
         """, (user_id,))
+        print("sesh id 2: ", user_id)
         total_fine = cur.fetchone()  # Fetching the total fine incurred by the member
+       
         cur.close()
-        return render_template('account.html', total_fine=total_fine)
+        
+        #return render_template('account.html', total_fine=total_fine)
+        return render_template('account.html', user={'name': name}, total_fine=total_fine)
     else:
         return redirect(url_for('signin'))
     
